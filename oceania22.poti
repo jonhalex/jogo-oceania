@@ -1,0 +1,176 @@
+use "jerimum"
+
+tipo Jogador
+  img = Imagem("golfinhoazul.png").fatie(68, 26)
+  img2 = Imagem("golfinhoazul2.png").fatie(68, 26)
+  atingir = Imagem("atingido.png")
+  var vidas := 5
+  var placar := 0
+  var x := jogo.largura / 2
+  var y := jogo.altura / 2
+  var atingido := falso
+  var i := 1.0
+  desenhe()
+
+    se atingido então
+      atingir.desenhe(x, y, 4)
+    senão
+      se Teclado.TECLA_PARA_ESQUERDA então
+        img2[i.inteiro].desenhe(x, y, 1)
+      senão
+        img[i.inteiro].desenhe(x, y, 1)
+      fim
+    fim
+  fim
+  atingido_por(polvos: Lista[Polvo])
+    se não atingido então
+      para polvo em polvos faça
+        se jogo.distância(x, y, polvo.x, polvo.y) < 20 então
+          atingido := verdadeiro
+        fim
+      fim
+      se atingido então
+        vidas := vidas - 1
+      fim
+    fim
+    atingido
+  fim
+  reiniciar_posicao()
+    x := jogo.largura / 2
+    y := jogo.altura / 2
+    atingido := falso
+  fim
+  atualize()
+
+    i := i + 0.05
+    se i >= 7.0 então
+      i := 1.0
+    fim
+    se Teclado.TECLA_PARA_DIREITA então
+      x := x + 3
+      se x > jogo.largura - 40 então
+        x := jogo.largura - 40
+      fim
+    fim
+    se Teclado.TECLA_PARA_ESQUERDA então
+      x := x - 3
+      se x < 10 então
+        x := 10
+      fim
+    fim
+    se Teclado.TECLA_PARA_BAIXO então
+      y := y + 3
+      se y > jogo.altura - 40 então
+        y := jogo.altura - 40
+      fim
+    fim
+    se Teclado.TECLA_PARA_CIMA então
+      y := y - 3
+      se y < 10 então
+        y := 10
+      fim
+    fim
+  fim
+  catar_estrelas(estrelas: Lista[Estrela])
+    catado = estrelas.selecione(estrela => Jogo.distância(x, y, estrela.x, estrela.y) >= 35)
+    n = estrelas.tamanho - catado.tamanho
+    placar := placar + n * 10
+    catado
+  fim
+fim
+
+tipo Estrela
+  cor: Cor
+  var x := aleatório(jogo.largura)
+  var y := aleatório(jogo.altura)
+  img2 = Imagem.fatie("Estrela.png", 20, 20)
+  var a := 1.0
+  desenhe()
+
+    img = img2[a.inteiro]
+    #Relogio.milisegundos div 100 mod img2.tamanho + 1]
+    img.desenhe_centralizado(x, y, 1, 0)
+  fim
+  atualize()
+    a := a + 0.05
+    se a >= 10.0 então
+      a := 1.0
+    fim
+  fim
+fim
+
+tipo Polvo
+  img = Imagem("atak.png").fatie(45, 48)
+  var x := aleatório(1000)
+  var y := aleatório(20, 460)
+  var i := 1.0
+  desenhe()
+    img[i.inteiro].desenhe(x, y, 3)
+  fim
+  atualize()
+    i := i + 0.05
+    se i >= 8.0 então
+      i := 1.0
+    fim
+    x := x - 1
+  fim
+fim
+
+jogador = Jogador()
+polvo = Polvo()
+fonte = Fonte(20)
+fundo = Imagem("ocean.png")
+var tempo := 0.0
+
+var estrelas := Lista(1, Estrela(Cor.BRANCO))
+var polvos := [Polvo(), Polvo(), Polvo(), Polvo(), Polvo(), Polvo(), Polvo(), Polvo()]
+var rodando := verdadeiro
+
+para i de 1 até 10 faça
+  estrelas := Estrela(Cor.BRANCO) :: estrelas
+fim
+
+atualize()
+  se aleatório(100) < 4 e estrelas.tamanho < 25 então
+    estrelas := Estrela(Cor.BRANCO) :: estrelas
+  fim
+  se jogador.atingido_por(polvos) então
+    rodando := falso
+  fim
+  se não rodando e Teclado.TECLA_R e jogador.vidas > 0 então
+    rodando := verdadeiro
+    jogador.reiniciar_posicao
+  fim
+  se rodando então
+    para polvo em polvos faça
+      polvo.atualize
+    fim
+  fim
+
+  se polvos.tamanho < 5 então
+    polvos := Polvo() :: polvos
+  fim
+  estrelas := jogador.catar_estrelas(estrelas)
+  polvos := polvos.selecione(p => p.x + 100 > 0)
+  jogador.atualize
+  polvo.atualize
+  tempo := tempo + 1.0 / 60.0
+fim
+
+#fim
+desenhe()
+  fundo.desenhe(0, 0, 0)
+  jogador.desenhe
+  para polvo em polvos faça
+    polvo.desenhe
+  fim
+  para estrela em estrelas faça
+    estrela.desenhe
+  fim
+
+  fonte.desenhe("Vidas: {jogador.vidas}", 10, 20, 3, Cor.VERMELHO)
+  fonte.desenhe("Placar: {jogador.placar}", 100, 20, 3, Cor.VERMELHO)
+  fonte.desenhe("Tempo: {tempo.inteiro}s", 400, 20, 3, Cor.VERMELHO)
+fim
+
+jogo.iniciar("Oceania", 640, 480, atualize, desenhe)
